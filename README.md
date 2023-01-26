@@ -44,7 +44,7 @@ List of providers:
 2. Select project, provider, enter the bucket name and press the **Run** button in the modal window
 
 <div align="center" markdown>
-<img src="https://user-images.githubusercontent.com/79905215/214830070-c1356865-523d-4720-8f2e-211c9b7d2339.png" width="650"/>
+<img src="https://user-images.githubusercontent.com/48913536/214860601-28cb2962-6801-4331-8c62-16eee2f85f02.png" width="650"/>
 </div>
 
 ## Run from Volumes Project
@@ -52,13 +52,13 @@ List of providers:
 **Step 1.** Run the application from the context menu of the Volumes Project
 
 <div align="center" markdown>
-<img src="https://user-images.githubusercontent.com/79905215/214827452-3a4b54b6-e123-47a9-ac5f-a29c63ad4720.png">  
+<img src="https://user-images.githubusercontent.com/48913536/214860503-084fafe2-cf23-48af-8cce-79735c887bce.png">  
 </div>
 
 **Step 2.** Select provider, enter the bucket name and press the **Run** button in the modal window
 
 <div align="center" markdown>
-<img src="https://user-images.githubusercontent.com/79905215/214830090-83244745-4833-4451-9c0e-02003e766c2a.png" width="650">
+<img src="https://user-images.githubusercontent.com/48913536/214860535-72f7f867-295d-4c59-ac1d-9e6453a2ec17.png" width="650">
 </div>
 
 # How To Use
