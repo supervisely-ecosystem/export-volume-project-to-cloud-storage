@@ -41,12 +41,16 @@ def upload_volume_project_to_storage(local_project_dir, remote_project_path):
 
             local_project_paths.append(local_path)
             remote_project_paths.append(remote_path)
-
+    progress = sly.Progress(
+        message=f'Uploading project files to local storage with name "{g.PROJECT_NAME}" ',
+        total_cnt=len(local_project_paths),
+    )
     for local_path, remote_path in zip(local_project_paths, remote_project_paths):
         g.api.remote_storage.upload_path(
             local_path=local_path,
             remote_path=remote_path,
         )
+        progress.iter_done_report()
 
     remote_project_dir = g.api.remote_storage.get_remote_path(
         g.PROVIDER, g.BUCKET_NAME, g.PROJECT_NAME
