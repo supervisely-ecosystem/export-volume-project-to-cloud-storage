@@ -80,4 +80,4 @@ Before import bucket is empty:
 
 After import the project data (volumes and annotations) is in bucket:
 
-<img src="https://user-images.githubusercontent.com/48913536/214878841-3a594b69-8a3f-413f-b981-c0af9b6b7fba.png"/>
+<img src="https://user-images.githubusercontent.com/48913536/214883246-f0dececb-64ea-4aec-a048-394445960293.png"/>
