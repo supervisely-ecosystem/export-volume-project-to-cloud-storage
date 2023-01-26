@@ -42,7 +42,7 @@ def upload_volume_project_to_storage(local_project_dir, remote_project_path):
             local_project_paths.append(local_path)
             remote_project_paths.append(remote_path)
     progress = sly.Progress(
-        message=f'Uploading project files to local storage with name "{g.PROJECT_NAME}" ',
+        message=f'Uploading to "{g.PROVIDER}://{g.BUCKET_NAME}/{g.PROJECT_NAME}"',
         total_cnt=len(local_project_paths),
     )
     for local_path, remote_path in zip(local_project_paths, remote_project_paths):
