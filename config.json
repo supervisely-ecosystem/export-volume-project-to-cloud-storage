@@ -1,6 +1,7 @@
 {
   "name": "Export volume project to cloud storage",
   "type": "app",
+  "version": "2.0.0",
   "categories": ["export", "DICOM"],
   "description": "Export volume project to Google Cloud Storage, Amazon S3, Microsoft Azure, ...",
   "docker_image": "supervisely/base-py-sdk:6.69.10",
