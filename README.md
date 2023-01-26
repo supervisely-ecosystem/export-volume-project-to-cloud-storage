@@ -38,7 +38,7 @@ List of providers:
 1. Run app from the ecosystem
 
 <div align="center" markdown>
-<!-- <img src="https://user-images.githubusercontent.com/48913536/180185094-853935da-ae2e-4416-97a6-fbe164f9c3c4.png"/> -->
+  <img src="https://user-images.githubusercontent.com/48913536/214864650-4baae642-ef8f-4e38-9212-510c2613fd7e.png"/>
 </div>
 
 2. Select project, provider, enter the bucket name and press the **Run** button in the modal window
