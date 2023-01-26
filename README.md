@@ -76,8 +76,8 @@ List of providers:
 
 Before import bucket is empty:
 
-<img src="https://user-images.githubusercontent.com/12828725/180176958-4b14654b-ba9a-4882-b0e6-3dbfee224035.png"/>
+<img src="https://user-images.githubusercontent.com/48913536/214879028-dcc66020-a972-4a56-b40d-01117b325d64.png"/>
 
 After import the project data (volumes and annotations) is in bucket:
 
-<!-- https://user-images.githubusercontent.com/12828725/180199053-5571ecf1-e26c-479e-836d-1d5ef0084873.mp4 -->
+<img src="https://user-images.githubusercontent.com/48913536/214878841-3a594b69-8a3f-413f-b981-c0af9b6b7fba.png"/>
