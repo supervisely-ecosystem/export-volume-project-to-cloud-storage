@@ -1,5 +1,5 @@
 <div align="center" markdown>
-<!-- <img src="https://user-images.githubusercontent.com/106374579/183424972-011d8a6e-1f07-4c34-8ca1-4eff27d71438.png"/> -->
+<img src="https://user-images.githubusercontent.com/48913536/214856590-087865b1-c535-4f12-a593-06e886becdc4.png"/>
 
 # Export volume project to cloud storage
 
