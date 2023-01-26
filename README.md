@@ -70,7 +70,7 @@ List of providers:
 2. Run app from the context menu of project you would like to export
 3. In modal window choose desired cloud provider and define the bucket name (bucket has to be already created)
 4. Press RUN button
-5. The project will be exported to the following path: `/<bucker name>/<project name>`
+5. The project will be exported to the following path: `/<bucket name>/<project name>`
 
 # Example
 
