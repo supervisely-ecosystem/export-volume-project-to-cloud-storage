@@ -17,5 +17,8 @@
   "context_menu": {
     "target": ["volumes_project"],
     "context_root": "Download as"
-  }
+  },
+  "icon": "https://user-images.githubusercontent.com/48913536/214856602-14c5b5bd-a5f5-4adc-9d5f-c52f775dc399.png",
+  "icon_cover": true,
+  "poster": "https://user-images.githubusercontent.com/48913536/214856590-087865b1-c535-4f12-a593-06e886becdc4.png"
 }
