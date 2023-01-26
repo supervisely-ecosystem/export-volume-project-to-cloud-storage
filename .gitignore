@@ -1,0 +1,12 @@
+.env
+venv/
+.venv/
+secret_debug.env
+debug
+.idea
+.DS_Store
+__pycache__/
+src/debug
+supervisely
+app_data/
+.vscode/

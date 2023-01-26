@@ -1,0 +1,20 @@
+{
+  "name": "Export volume project to cloud storage",
+  "type": "app",
+  "categories": ["export", "DICOM"],
+  "description": "Export volume project to Google Cloud Storage, Amazon S3, Microsoft Azure, ...",
+  "docker_image": "supervisely/base-py-sdk:6.69.10",
+  "main_script": "src/main.py",
+  "modal_template": "src/modal.html",
+  "modal_template_state": {
+    "provider": "s3",
+    "bucketName": ""
+  },
+  "task_location": "workspace_tasks",
+  "isolate": true,
+  "headless": true,
+  "context_menu": {
+    "target": ["volumes_project"],
+    "context_root": "Download as"
+  }
+}
