@@ -24,35 +24,39 @@ def validate_remote_storage_path(api, project_name):
     return res_project_name
 
 
-def upload_volume_project_to_storage(local_project_dir, remote_project_path):
+def upload_volume_project_to_storage(
+    api, local_project_dir, remote_project_path, remote_project_name
+):
     local_project_paths = []
     remote_project_paths = []
     for dirpath, _, filenames in os.walk(local_project_dir):
         for filename in filenames:
-            remote_dir_name = dirpath
             local_path = os.path.join(dirpath, filename)
+            local_project_paths.append(local_path)
+
+            remote_dir_name = dirpath
             if remote_dir_name.startswith(g.DATA_DIR_NAME):
                 remote_dir_name = "".join(remote_dir_name.split(f"{g.DATA_DIR_NAME}/", 1))
-            if remote_dir_name == g.PROJECT.name:
+            if remote_dir_name == g.PROJECT_NAME:
                 remote_dir_name = ""
-            elif remote_dir_name.startswith(g.PROJECT.name):
-                remote_dir_name = "".join(remote_dir_name.split(f"{g.PROJECT.name}/", 1))
-            remote_path = os.path.join(remote_project_path, remote_dir_name, filename)
+            elif remote_dir_name.startswith(g.PROJECT_NAME):
+                remote_dir_name = "".join(remote_dir_name.split(f"{g.PROJECT_NAME}/", 1))
 
-            local_project_paths.append(local_path)
+            remote_path = os.path.join(remote_project_path, remote_dir_name, filename)
             remote_project_paths.append(remote_path)
+
     progress = sly.Progress(
-        message=f'Uploading to "{g.PROVIDER}://{g.BUCKET_NAME}/{g.PROJECT_NAME}"',
+        message=f'Uploading to "{g.PROVIDER}://{g.BUCKET_NAME}/{remote_project_name}"',
         total_cnt=len(local_project_paths),
     )
     for local_path, remote_path in zip(local_project_paths, remote_project_paths):
-        g.api.remote_storage.upload_path(
+        api.remote_storage.upload_path(
             local_path=local_path,
             remote_path=remote_path,
         )
         progress.iter_done_report()
 
-    remote_project_dir = g.api.remote_storage.get_remote_path(
-        g.PROVIDER, g.BUCKET_NAME, g.PROJECT_NAME
+    remote_project_dir = api.remote_storage.get_remote_path(
+        g.PROVIDER, g.BUCKET_NAME, remote_project_name
     )
     sly.logger.info(f"✅Project has been successfully exported to {remote_project_dir}")
