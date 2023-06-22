@@ -40,7 +40,8 @@ List of providers:
 <div align="center" markdown>
   <img src="https://user-images.githubusercontent.com/48913536/214864650-4baae642-ef8f-4e38-9212-510c2613fd7e.png"/>
 </div>
-Select the project, and provider, enter the bucket name, and press the **Run** button in the modal window
+
+2. Select the project, and provider, enter the bucket name, and press the **Run** button in the modal window
 
 <div align="center" markdown>
 <img src="https://user-images.githubusercontent.com/48913536/214860601-28cb2962-6801-4331-8c62-16eee2f85f02.png" width="650"/>
