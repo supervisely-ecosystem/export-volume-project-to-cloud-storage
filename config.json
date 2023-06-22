@@ -4,7 +4,8 @@
   "version": "2.0.0",
   "categories": ["export", "dicom"],
   "description": "Export volume project to Google Cloud Storage, Amazon S3, Microsoft Azure, ...",
-  "docker_image": "supervisely/base-py-sdk:6.69.13",
+  "docker_image": "supervisely/base-py-sdk:6.72.45",
+  "instance_version": "6.8.0",
   "main_script": "src/main.py",
   "modal_template": "src/modal.html",
   "modal_template_state": {
