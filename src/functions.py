@@ -9,7 +9,7 @@ def validate_remote_storage_path(api, project_name):
         provider=g.PROVIDER, bucket=g.BUCKET_NAME, path_in_bucket=""
     )
     remote_paths = api.remote_storage.list(
-        path=remote_path, recursive=False, files=False, folders=True
+        path=remote_path, recursive=False, files=False, folders=True, team_id=g.TEAM_ID
     )
     remote_folders = [item.get("name") for item in remote_paths]
     res_project_name = project_name
@@ -53,6 +53,7 @@ def upload_volume_project_to_storage(
         api.remote_storage.upload_path(
             local_path=local_path,
             remote_path=remote_path,
+            team_id=g.TEAM_ID,
         )
         progress.iter_done_report()
 

@@ -10,6 +10,7 @@ if sly.is_development():
 api = sly.Api.from_env()
 
 TASK_ID = sly.env.task_id()
+TEAM_ID = sly.env.team_id()
 PROJECT_ID = sly.env.project_id()
 
 PROJECT = api.project.get_info_by_id(PROJECT_ID)
