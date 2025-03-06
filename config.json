@@ -13,7 +13,9 @@
     "modal_template": "src/modal.html",
     "modal_template_state": {
         "provider": "s3",
-        "bucketName": ""
+        "bucketName": "",
+        "format": "sly",
+        "segmentation": "instance"
     },
     "task_location": "workspace_tasks",
     "isolate": true,
