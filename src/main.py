@@ -25,7 +25,20 @@ download_volume_project(
     log_progress=True,
 )
 
+if g.EXPORT_FORMAT != "sly":
+    local_project_dir = f.convert_volume_project(local_project_dir)
 
-f.upload_volume_project_to_storage(g.api, local_project_dir, remote_project_path, remote_project_name)
+
+dir_size = sly.fs.get_directory_size(local_project_dir)
+progress = sly.tqdm_sly(
+    desc=f"Uploading to {remote_project_path}",
+    total=dir_size,
+    unit="B",
+    unit_scale=True,
+)
+res_path = g.api.storage.upload_directory(
+    g.TEAM_ID, local_project_dir, remote_project_path, progress_size_cb=progress
+)
+sly.logger.info(f"Successfully uploaded to {res_path}")
 
 sly.fs.remove_dir(g.STORAGE_DIR)
