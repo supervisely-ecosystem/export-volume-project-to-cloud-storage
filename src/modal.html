@@ -13,4 +13,22 @@
             <el-input v-model="state.bucketName"></el-input>
         </sly-field>
     </div>
+    <div class="fflex align-start">
+        <sly-field title="Export format">
+            <el-select v-model="state.format" placeholder="Select format">
+                <el-option key="sly" label="Supervisely (NRRD + JSON)" value="sly"></el-option>
+                <el-option key="nrrd" label="NRRD" value="nrrd"></el-option>
+                <el-option key="nifti" label="NIFTI" value="nifti"></el-option>
+            </el-select>
+        </sly-field>
+        <sly-field
+            title="Annotations format (task type)" 
+            description="Specify whether you want to export objects of class as a separate instances (instance segmentation) or as a single mask (semantic segmentation)"
+        >
+        <el-select v-if="state.format == 'nifti' || state.format == 'nrrd'" v-model="state.segmentation" placeholder="Select format">
+            <el-option key="instance" label="Instance segmentation" value="instance"></el-option>
+            <el-option key="semantic" label="Semantic segmentation" value="semantic"></el-option>
+        </el-select>
+    </sly-field>
+</div>
 </div>
