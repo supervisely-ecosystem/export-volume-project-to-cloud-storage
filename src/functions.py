@@ -125,9 +125,6 @@ def convert_volume_project(local_project_dir: str) -> str:
     for name, (idx, color) in color_map.items():
         color_map_to_txt.append(f"{idx} {name} {' '.join(map(str, color))}")
     color_map_txt_path = new_project_dir / "color_map.txt"
-    with open(color_map_txt_path, "w") as f:
-        f.write("\n".join(color_map_to_txt))
-    sly.logger.info(f"Color map saved to {color_map_txt_path}")
 
 
 
@@ -148,6 +145,12 @@ def convert_volume_project(local_project_dir: str) -> str:
         prefixes = [PlanePrefix.AXIAL, PlanePrefix.CORONAL, PlanePrefix.SAGITTAL]
         if all(name[:3] in prefixes for name in ds.get_items_names()):
             ds_structure_type = 2
+
+        if ds_structure_type == 2:
+            if not sly.fs.file_exists(color_map_txt_path):
+                with open(color_map_txt_path, "w") as f:
+                    f.write("\n".join(color_map_to_txt))
+                sly.logger.info(f"Color map saved to {color_map_txt_path}")
 
         for name in ds.get_items_names():
             volume_path = ds.get_item_path(name)
