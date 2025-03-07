@@ -119,6 +119,17 @@ def convert_volume_project(local_project_dir: str) -> str:
     new_project_dir.mkdir(parents=True, exist_ok=True)
 
     meta = project_fs.meta
+    color_map = {o.name: [i, o.color] for i, o in enumerate(meta.obj_classes, 1)}
+
+    color_map_to_txt = []
+    for name, (idx, color) in color_map.items():
+        color_map_to_txt.append(f"{idx} {name} {' '.join(map(str, color))}")
+    color_map_txt_path = new_project_dir / "color_map.txt"
+    with open(color_map_txt_path, "w") as f:
+        f.write("\n".join(color_map_to_txt))
+    sly.logger.info(f"Color map saved to {color_map_txt_path}")
+
+
 
     ds_infos = g.api.dataset.get_list(g.PROJECT_ID, recursive=True)
 
@@ -176,6 +187,8 @@ def convert_volume_project(local_project_dir: str) -> str:
             if len(ann.objects) > 0:
                 volume_np, volume_meta = sly.volume.read_nrrd_serie_volume_np(volume_path)
 
+                semantic = np.zeros(volume_np.shape, dtype=np.uint8)
+                instances = {}
                 cls_to_npy = {
                     obj.obj_class.name: np.zeros(volume_np.shape, dtype=np.uint8)
                     for obj in ann.objects
@@ -198,10 +211,21 @@ def convert_volume_project(local_project_dir: str) -> str:
                         )
                         continue
 
-                    val = 1
-                    if g.SEGMENTATION_TYPE != "semantic":
-                        val = cls_to_npy[sf.volume_object.obj_class.name].max() + 1
-                    cls_to_npy[sf.volume_object.obj_class.name][mask3d.data] = val
+                    if ds_structure_type == 2:
+                        if g.SEGMENTATION_TYPE == "semantic":
+                            cls_id = color_map[sf.volume_object.obj_class.name][0]
+                            semantic[mask3d.data] = cls_id
+                        else:
+                            cls_id = color_map[sf.volume_object.obj_class.name][0]
+                            if cls_id not in instances.keys():
+                                instances[cls_id] = np.zeros(volume_np.shape, dtype=np.uint8)
+                            idx = instances[cls_id].max() + 1
+                            instances[cls_id][mask3d.data] = idx
+                    else:
+                        val = 1
+                        if g.SEGMENTATION_TYPE != "semantic":
+                            val = cls_to_npy[sf.volume_object.obj_class.name].max() + 1
+                        cls_to_npy[sf.volume_object.obj_class.name][mask3d.data] = val
 
                 def _get_label_path(entity_name, ext):
                     if ds_structure_type == 1:
@@ -235,7 +259,13 @@ def convert_volume_project(local_project_dir: str) -> str:
                     reordered_to_ras_nifti = nib.as_closest_canonical(nifti)
                     affine = reordered_to_ras_nifti.affine
 
-                _save_ann(cls_to_npy, ext, volume_meta, affine)
+                if ds_structure_type == 1:
+                    _save_ann(cls_to_npy, ext, volume_meta, affine)
+                else:
+                    if g.SEGMENTATION_TYPE == "semantic":
+                        _save_ann({ds.name: semantic}, ext, volume_meta, affine)
+                    else:
+                        _save_ann(instances, ext, volume_meta, affine)
 
     sly.logger.info(f"Converted project to {g.EXPORT_FORMAT}")
 
