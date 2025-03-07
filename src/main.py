@@ -13,14 +13,16 @@ remote_project_name = f.validate_remote_storage_path(api=g.api, project_name=g.P
 remote_project_path = g.api.remote_storage.get_remote_path(
     provider=g.PROVIDER, bucket=g.BUCKET_NAME, path_in_bucket=remote_project_name
 )
-
-datasets = list(g.api.dataset.get_list(g.PROJECT_ID))
+if g.DATASET_ID is not None:
+    datasets = [g.DATASET_ID]
+else:
+    datasets = [d.id for d in g.api.dataset.get_list(g.PROJECT_ID)]
 
 download_volume_project(
     api=g.api,
     project_id=g.PROJECT_ID,
     dest_dir=local_project_dir,
-    dataset_ids=[dataset.id for dataset in datasets] if len(datasets) > 0 else None,
+    dataset_ids=datasets if len(datasets) > 0 else None,
     download_volumes=True,
     log_progress=True,
 )

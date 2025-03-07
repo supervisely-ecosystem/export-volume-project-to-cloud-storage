@@ -15,14 +15,15 @@
         "provider": "s3",
         "bucketName": "",
         "format": "sly",
-        "segmentation": "instance"
+        "segmentation": "semantic"
     },
     "task_location": "workspace_tasks",
     "isolate": true,
     "headless": true,
     "context_menu": {
         "target": [
-            "volumes_project"
+            "volumes_project",
+            "volumes_dataset"
         ],
         "context_root": "Download as"
     },
