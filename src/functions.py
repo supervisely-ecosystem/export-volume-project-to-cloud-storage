@@ -8,21 +8,21 @@ import supervisely as sly
 from supervisely.convert.volume.nii.nii_volume_helper import PlanePrefix
 
 
-def validate_remote_storage_path(api, project_name):
+def validate_remote_storage_path(api: sly.Api, project_name: str) -> str:
     remote_path = api.remote_storage.get_remote_path(
         provider=g.PROVIDER, bucket=g.BUCKET_NAME, path_in_bucket=""
     )
-    remote_paths = api.remote_storage.list(
-        path=remote_path, recursive=False, files=False, folders=True, team_id=g.TEAM_ID
+    remote_paths = api.storage.list(
+        g.TEAM_ID, path=remote_path, recursive=False, include_files=False, include_folders=True
     )
-    remote_folders = [item.get("name") for item in remote_paths]
+    remote_folders = [item.name for item in remote_paths if item.is_dir]
     res_project_name = project_name
     while res_project_name in remote_folders:
-        res_project_name = sly._utils.generate_free_name(
+        res_project_name = sly.generate_free_name(
             used_names=remote_folders, possible_name=project_name
         )
     if res_project_name != project_name:
-        sly.logger.warn(
+        sly.logger.warning(
             f"Project with name: {project_name} already exists in bucket, project has been renamed to {res_project_name}"
         )
     return res_project_name
