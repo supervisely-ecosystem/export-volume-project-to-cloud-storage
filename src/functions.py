@@ -6,6 +6,13 @@ import numpy as np
 import src.globals as g
 import supervisely as sly
 from supervisely.convert.volume.nii.nii_volume_helper import PlanePrefix
+from collections import defaultdict
+
+plane_map = {
+    PlanePrefix.AXIAL: "0-0-1",
+    PlanePrefix.CORONAL: "0-1-0",
+    PlanePrefix.SAGITTAL: "1-0-0",
+}
 
 
 def validate_remote_storage_path(api: sly.Api, project_name: str) -> str:
@@ -197,6 +204,27 @@ def convert_volume_project(local_project_dir: str) -> str:
                     for obj in ann.objects
                 }
 
+                custom_data = defaultdict(lambda: defaultdict(float))
+
+                if ds_structure_type == 2:
+                    used_labels = set()
+                    for fig in ann.figures + ann.spatial_figures:
+                        if fig.custom_data:
+                            plane = None
+                            for key in prefixes:
+                                if key in short_name:
+                                    plane = key
+                                    break
+                            plane = plane_map.get(plane, "0-0-1")
+                            if plane is not None and plane in fig.custom_data:
+                                label_index = color_map[fig.volume_object.obj_class.name][0]
+                                for _frame_idx, _data in fig.custom_data[plane].items():
+                                    if "score" in _data:
+                                        custom_data[_frame_idx][f"Label-{label_index}"] = _data[
+                                            "score"
+                                        ]
+                                        used_labels.add(fig.volume_object.obj_class.name)
+
                 mask_dir = ds.get_mask_dir(name)
                 geometries_dict = {}
 
@@ -266,6 +294,17 @@ def convert_volume_project(local_project_dir: str) -> str:
                     _save_ann(cls_to_npy, ext, volume_meta, affine)
                 else:
                     if g.SEGMENTATION_TYPE == "semantic":
+                        if len(custom_data) > 0:
+                            csv_path = ds_path / f"{short_name}.csv"
+                            if "anatomic" in short_name:
+                                csv_path = ds_path / f"{short_name.replace('anatomic', 'score')}.csv"
+                            with open(csv_path, "w") as f:
+                                col_names = [f"Label-{color_map[name][0]}" for name in used_labels]
+                                col_names = sorted(col_names, key=lambda x: int(x.split("-")[1]))
+                                f.write(",".join(["Layer"] + col_names) + "\n")
+                                for layer, scores in custom_data.items():
+                                    scores_str = [str(scores.get(name, 0.0)) for name in col_names]
+                                    f.write(",".join([str(layer)] + scores_str) + "\n")
                         _save_ann({ds.name: semantic}, ext, volume_meta, affine)
                     else:
                         _save_ann(instances, ext, volume_meta, affine)
