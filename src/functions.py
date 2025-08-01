@@ -13,6 +13,7 @@ plane_map = {
     PlanePrefix.CORONAL: "0-1-0",
     PlanePrefix.SAGITTAL: "1-0-0",
 }
+prefixes = [PlanePrefix.AXIAL, PlanePrefix.CORONAL, PlanePrefix.SAGITTAL]
 
 
 def validate_remote_storage_path(api: sly.Api, project_name: str) -> str:
@@ -125,15 +126,54 @@ def convert_volume_project(local_project_dir: str) -> str:
     new_project_dir = Path(local_project_dir).parent / new_name
     new_project_dir.mkdir(parents=True, exist_ok=True)
 
+    segmentation_type = g.SEGMENTATION_TYPE
+
     meta = project_fs.meta
-    color_map = {o.name: [i, o.color] for i, o in enumerate(meta.obj_classes, 1)}
+
+    def _find_pixel_values(descr: str) -> int:
+        """
+        Find the pixel value in the description string.
+        """
+        lines = descr.split("\n")
+        for line in lines:
+            if line.strip().startswith(helper.MASK_PIXEL_VALUE):
+                try:
+                    value_part = line.strip().split(helper.MASK_PIXEL_VALUE)[1]
+                    return int(value_part.strip())
+                except (IndexError, ValueError):
+                    continue
+        return None
+
+    mask_pixel_values = {
+        obj_class.name: _find_pixel_values(obj_class.description) for obj_class in meta.obj_classes
+    }
+
+    color_map = {}
+    used_indices = set()
+
+    # First assign original pixel_values (if they exist)
+    for obj_class in meta.obj_classes:
+        original_pixel_value = mask_pixel_values.get(obj_class.name)
+        if original_pixel_value is not None:
+            color_map[obj_class.name] = [original_pixel_value, obj_class.color]
+            used_indices.add(original_pixel_value)
+
+    # Then assign free indices to classes without original pixel_values
+    next_available_idx = 1
+    for obj_class in meta.obj_classes:
+        if obj_class.name not in color_map:
+            # Find the next available index
+            while next_available_idx in used_indices:
+                next_available_idx += 1
+
+            color_map[obj_class.name] = [next_available_idx, obj_class.color]
+            used_indices.add(next_available_idx)
+            next_available_idx += 1
 
     color_map_to_txt = []
     for name, (idx, color) in color_map.items():
         color_map_to_txt.append(f"{idx} {name} {' '.join(map(str, color))}")
     color_map_txt_path = new_project_dir / "color_map.txt"
-
-
 
     ds_infos = g.api.dataset.get_list(g.PROJECT_ID, recursive=True)
 
@@ -148,10 +188,14 @@ def convert_volume_project(local_project_dir: str) -> str:
         ds_path = new_project_dir / ds.name
         ds_path.mkdir(parents=True, exist_ok=True)
 
-        ds_structure_type = 1
-        prefixes = [PlanePrefix.AXIAL, PlanePrefix.CORONAL, PlanePrefix.SAGITTAL]
-        if all(name[:3] in prefixes for name in ds.get_items_names()):
+        if g.EXPORT_FORMAT == "nifti":
             ds_structure_type = 2
+            for item_name in ds.get_items_names():
+                if not any(prefix in item_name for prefix in prefixes):
+                    ds_structure_type = 1
+                    break
+        else:
+            ds_structure_type = 1
 
         if ds_structure_type == 2:
             if not sly.fs.file_exists(color_map_txt_path):
@@ -196,7 +240,14 @@ def convert_volume_project(local_project_dir: str) -> str:
 
             if len(ann.objects) > 0:
                 volume_np, volume_meta = sly.volume.read_nrrd_serie_volume_np(volume_path)
-
+                direction = np.array(volume_meta["directions"]).reshape(3, 3)
+                spacing = np.array(volume_meta["spacing"])
+                space_directions = (direction.T * spacing[:, None]).tolist()
+                volume_header = {
+                    "space": "right-anterior-superior",
+                    "space directions": space_directions,
+                    "space origin": volume_meta.get("origin", None),
+                }
                 semantic = np.zeros(volume_np.shape, dtype=np.uint8)
                 instances = {}
                 cls_to_npy = {
@@ -226,37 +277,40 @@ def convert_volume_project(local_project_dir: str) -> str:
                                         used_labels.add(fig.volume_object.obj_class.name)
 
                 mask_dir = ds.get_mask_dir(name)
-                geometries_dict = {}
 
                 if mask_dir is not None and sly.fs.dir_exists(mask_dir):
                     mask_paths = sly.fs.list_files(mask_dir, valid_extensions=[".nrrd"])
-                    geometries_dict.update(sly.Mask3D._bytes_from_nrrd_batch(mask_paths))
-
+                    nrrd_data_dict = {}
+                    for mask_path in mask_paths:
+                        key = os.path.basename(mask_path).replace(".nrrd", "")
+                        data, _ = nrrd.read(mask_path)
+                        nrrd_data_dict[key] = data
                 for sf in ann.spatial_figures:
+                    class_name = sf.volume_object.obj_class.name
+
                     try:
-                        geometry_bytes = geometries_dict[sf.key().hex]
-                        mask3d = sly.Mask3D.from_bytes(geometry_bytes)
+                        mask_data = nrrd_data_dict[sf.key().hex]
+                        mask3d = sly.Mask3D(mask_data, volume_header=volume_header)
                     except Exception as e:
                         sly.logger.warning(
-                            f"Skipping spatial figure for class '{sf.volume_object.obj_class.name}': {str(e)}"
+                            f"Skipping spatial figure {sf.key().hex} for class '{class_name}': {str(e)}"
                         )
                         continue
 
                     if ds_structure_type == 2:
-                        if g.SEGMENTATION_TYPE == "semantic":
-                            cls_id = color_map[sf.volume_object.obj_class.name][0]
-                            semantic[mask3d.data] = cls_id
-                        else:
-                            cls_id = color_map[sf.volume_object.obj_class.name][0]
-                            if cls_id not in instances.keys():
-                                instances[cls_id] = np.zeros(volume_np.shape, dtype=np.uint8)
-                            idx = instances[cls_id].max() + 1
-                            instances[cls_id][mask3d.data] = idx
-                    else:
+                        pixel_value = color_map[class_name][0]
+                        if segmentation_type == "semantic":
+                            semantic[mask3d.data] = pixel_value
+                        else:  # instance segmentation
+                            if pixel_value not in instances.keys():
+                                instances[pixel_value] = np.zeros(volume_np.shape, dtype=np.uint8)
+                            idx = instances[pixel_value].max() + 1
+                            instances[pixel_value][mask3d.data] = idx
+                    else:  # ds_structure_type == 1
                         val = 1
-                        if g.SEGMENTATION_TYPE != "semantic":
-                            val = cls_to_npy[sf.volume_object.obj_class.name].max() + 1
-                        cls_to_npy[sf.volume_object.obj_class.name][mask3d.data] = val
+                        if segmentation_type != "semantic":
+                            val = cls_to_npy[class_name].max() + 1
+                        cls_to_npy[class_name][mask3d.data] = val
 
                 def _get_label_path(entity_name, ext):
                     if ds_structure_type == 1:
@@ -264,12 +318,13 @@ def convert_volume_project(local_project_dir: str) -> str:
                         labels_dir.mkdir(parents=True, exist_ok=True)
                         label_path = labels_dir / f"{entity_name}{ext}"
                     else:
-                        prefix = PlanePrefix(short_name[:3])
                         idx = 1
-                        label_path = ds_path / f"{prefix}_inference_{idx}{ext}"
+                        label_path = ds_path / (short_name.replace("anatomic", "inference") + ext)
                         while label_path.exists():
                             idx += 1
-                            label_path = ds_path / f"{prefix}_inference_{idx}{ext}"
+                            label_path = ds_path / (
+                                short_name.replace("anatomic", "inference") + f"_{idx}" + ext
+                            )
 
                     return label_path
 
@@ -284,31 +339,36 @@ def convert_volume_project(local_project_dir: str) -> str:
                             with open(label_path, "wb") as file:
                                 file.write(volume_bytes)
 
-                affine = None
-                if g.EXPORT_FORMAT == "nifti":
-                    nifti = nib.load(res_path)
-                    reordered_to_ras_nifti = nib.as_closest_canonical(nifti)
-                    affine = reordered_to_ras_nifti.affine
+
+
+                volume_affine = nib.as_closest_canonical(nib.load(res_path)).affine
 
                 if ds_structure_type == 1:
-                    _save_ann(cls_to_npy, ext, volume_meta, affine)
+                    mapping = cls_to_npy
                 else:
-                    if g.SEGMENTATION_TYPE == "semantic":
-                        if len(custom_data) > 0:
-                            csv_path = ds_path / f"{short_name}.csv"
-                            if "anatomic" in short_name:
-                                csv_path = ds_path / f"{short_name.replace('anatomic', 'score')}.csv"
-                            with open(csv_path, "w") as f:
-                                col_names = [f"Label-{color_map[name][0]}" for name in used_labels]
-                                col_names = sorted(col_names, key=lambda x: int(x.split("-")[1]))
-                                f.write(",".join(["Layer"] + col_names) + "\n")
-                                for layer, scores in custom_data.items():
-                                    scores_str = [str(scores.get(name, 0.0)) for name in col_names]
-                                    f.write(",".join([str(layer)] + scores_str) + "\n")
-                        _save_ann({ds.name: semantic}, ext, volume_meta, affine)
-                    else:
-                        _save_ann(instances, ext, volume_meta, affine)
+                    mapping = instances if segmentation_type != "semantic" else {ds.name: semantic}
+
+                _save_ann(mapping, ext, volume_meta, volume_affine)
+
+                if (
+                    ds_structure_type == 2
+                    and segmentation_type == "semantic"
+                    and len(custom_data) > 0
+                ):
+                    csv_path = ds_path / f"{short_name}.csv"
+                    if "anatomic" in short_name:
+                        csv_path = ds_path / f"{short_name.replace('anatomic', 'score')}.csv"
+                    with open(csv_path, "w") as f:
+                        col_names = [f"Label-{color_map[name][0]}" for name in used_labels]
+                        col_names = sorted(col_names, key=lambda x: int(x.split("-")[1]))
+                        f.write(",".join(["Layer"] + col_names) + "\n")
+                        for layer, scores in custom_data.items():
+                            scores_str = [str(scores.get(name, 0.0)) for name in col_names]
+                            f.write(",".join([str(layer)] + scores_str) + "\n")
 
     sly.logger.info(f"Converted project to {g.EXPORT_FORMAT}")
-
+    if g.EXPORT_FORMAT == "nifti":
+        sly.fs.remove_dir(local_project_dir)
+        os.rename(str(new_project_dir), local_project_dir)
+        return local_project_dir
     return str(new_project_dir)
