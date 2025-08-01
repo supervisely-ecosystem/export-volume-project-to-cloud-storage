@@ -2,18 +2,19 @@ import os
 from pathlib import Path
 
 import numpy as np
+import nrrd
 
 import src.globals as g
 import supervisely as sly
-from supervisely.convert.volume.nii.nii_volume_helper import PlanePrefix
+from supervisely.convert.volume.nii import nii_volume_helper as helper
 from collections import defaultdict
 
 plane_map = {
-    PlanePrefix.AXIAL: "0-0-1",
-    PlanePrefix.CORONAL: "0-1-0",
-    PlanePrefix.SAGITTAL: "1-0-0",
+    helper.PlanePrefix.AXIAL: "0-0-1",
+    helper.PlanePrefix.CORONAL: "0-1-0",
+    helper.PlanePrefix.SAGITTAL: "1-0-0",
 }
-prefixes = [PlanePrefix.AXIAL, PlanePrefix.CORONAL, PlanePrefix.SAGITTAL]
+prefixes = [helper.PlanePrefix.AXIAL, helper.PlanePrefix.CORONAL, helper.PlanePrefix.SAGITTAL]
 
 
 def validate_remote_storage_path(api: sly.Api, project_name: str) -> str:
