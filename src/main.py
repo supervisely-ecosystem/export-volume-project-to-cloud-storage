@@ -21,6 +21,8 @@ if g.DATASET_ID is not None:
             dataset_name=dataset_name, 
             project_name=g.PROJECT_NAME
         )
+        remote_path = g.api.remote_storage.get_remote_path(provider=g.PROVIDER, bucket=g.BUCKET_NAME, path_in_bucket=remote_dataset_name)
+        remote_base_path = remote_dataset_name
     else:
         # Export to <bucket>/<dataset_name>
         remote_dataset_name = f.validate_remote_dataset_path(
@@ -28,9 +30,8 @@ if g.DATASET_ID is not None:
             dataset_name=dataset_name, 
             project_name=None
         )
-    
-    remote_path = g.api.remote_storage.get_remote_path(provider=g.PROVIDER, bucket=g.BUCKET_NAME, path_in_bucket=remote_dataset_name)
-    remote_base_path = remote_dataset_name
+        remote_path = g.api.remote_storage.get_remote_path(provider=g.PROVIDER, bucket=g.BUCKET_NAME, path_in_bucket=remote_dataset_name)
+        remote_base_path = remote_dataset_name
 else:
     datasets = [d.id for d in g.api.dataset.get_list(g.PROJECT_ID)]
     remote_project_name = f.validate_remote_storage_path(api=g.api, project_name=g.PROJECT_NAME)
@@ -50,8 +51,18 @@ download_volume_project(
 if g.EXPORT_FORMAT != "sly":
     local_project_dir = f.convert_volume_project(local_project_dir, remote_base_path)
 
+# For single dataset export, upload only the dataset folder content
+if g.DATASET_ID is not None:
+    # Get the actual dataset folder path inside the project
+    dataset_folder = os.path.join(local_project_dir, dataset_name)
+    if os.path.exists(dataset_folder):
+        upload_dir = dataset_folder
+    else:
+        upload_dir = local_project_dir
+else:
+    upload_dir = local_project_dir
 
-dir_size = sly.fs.get_directory_size(local_project_dir)
+dir_size = sly.fs.get_directory_size(upload_dir)
 progress = sly.tqdm_sly(
     desc=f"Uploading to {remote_path}",
     total=dir_size,
@@ -59,7 +70,7 @@ progress = sly.tqdm_sly(
     unit_scale=True,
 )
 res_path = g.api.storage.upload_directory(
-    g.TEAM_ID, local_project_dir, remote_path, progress_size_cb=progress
+    g.TEAM_ID, upload_dir, remote_path, progress_size_cb=progress
 )
 sly.logger.info(f"Successfully uploaded to {res_path}")
 

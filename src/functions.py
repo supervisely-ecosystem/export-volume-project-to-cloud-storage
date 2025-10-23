@@ -261,29 +261,7 @@ def convert_volume_project(local_project_dir: str, remote_base_path: str = None)
             ds_structure_type = 1
 
         if ds_structure_type == 2:
-            # Check if color_map.txt already exists in remote storage
-            color_map_exists_remote = False
-            if remote_base_path:
-                try:
-                    remote_color_map_path = g.api.remote_storage.get_remote_path(
-                        provider=g.PROVIDER, 
-                        bucket=g.BUCKET_NAME, 
-                        path_in_bucket=f"{remote_base_path}/color_map.txt"
-                    )
-                    # Try to get file info to check if it exists
-                    remote_files = g.api.storage.list(
-                        g.TEAM_ID, 
-                        path=remote_color_map_path,
-                        recursive=False
-                    )
-                    if len(remote_files) > 0:
-                        color_map_exists_remote = True
-                        sly.logger.info(f"Color map already exists in remote storage, skipping creation")
-                except Exception:
-                    # If error occurs, assume file doesn't exist
-                    color_map_exists_remote = False
-            
-            if not color_map_exists_remote and not sly.fs.file_exists(color_map_txt_path):
+            if not sly.fs.file_exists(color_map_txt_path):
                 with open(color_map_txt_path, "w") as f:
                     f.write("\n".join(color_map_to_txt))
                 sly.logger.info(f"Color map saved to {color_map_txt_path}")
@@ -423,8 +401,6 @@ def convert_volume_project(local_project_dir: str, remote_base_path: str = None)
                             volume_bytes = sly.volume.encode(volume_np=npy, volume_meta=volume_meta)
                             with open(label_path, "wb") as file:
                                 file.write(volume_bytes)
-
-
 
                 volume_affine = nib.as_closest_canonical(nib.load(res_path)).affine
 
