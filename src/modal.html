@@ -32,5 +32,13 @@
             <el-option key="semantic" label="Semantic segmentation" value="semantic"></el-option>
         </el-select>
     </sly-field>
-</div>
+    </div>
+    <div v-if="context.slyDatasetId">
+        <sly-field 
+          title="Create project folder"
+          description="If enabled data will be exported to <bucket name>/<project name>/<dataset name>. Otherwise data will be exported to <bucket name>/<dataset name>"
+          >
+            <el-checkbox v-model="state.createProjectfolder">Enable</el-checkbox>
+          </sly-field>
+    </div>
 </div>

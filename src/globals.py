@@ -24,6 +24,7 @@ if BUCKET_NAME == "" or BUCKET_NAME is None:
 
 EXPORT_FORMAT = os.getenv("modal.state.format", "sly")
 SEGMENTATION_TYPE = os.getenv("modal.state.segmentation", "semantic")
+CREATE_PROJECT_FOLDER = os.getenv("modal.state.createProjectfolder", "true").lower() == "true"
 
 DATA_DIR_NAME = os.getenv("SLY_APP_DATA_DIR")
 STORAGE_DIR = sly.app.get_data_dir()
