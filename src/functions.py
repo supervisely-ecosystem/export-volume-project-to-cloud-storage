@@ -17,7 +17,7 @@ plane_map = {
 prefixes = [helper.PlanePrefix.AXIAL, helper.PlanePrefix.CORONAL, helper.PlanePrefix.SAGITTAL]
 
 
-def validate_remote_storage_path(api: sly.Api, project_name: str) -> str:
+def validate_remote_storage_path(api: sly.Api, folder_name: str) -> str:
     remote_path = api.remote_storage.get_remote_path(
         provider=g.PROVIDER, bucket=g.BUCKET_NAME, path_in_bucket=""
     )
@@ -25,77 +25,16 @@ def validate_remote_storage_path(api: sly.Api, project_name: str) -> str:
         g.TEAM_ID, path=remote_path, recursive=False, include_files=False, include_folders=True
     )
     remote_folders = [item.name for item in remote_paths if item.is_dir]
-    res_project_name = project_name
-    while res_project_name in remote_folders:
-        res_project_name = sly.generate_free_name(
-            used_names=remote_folders, possible_name=project_name
+    res_folder_name = folder_name
+    while res_folder_name in remote_folders:
+        res_folder_name = sly.generate_free_name(
+            used_names=remote_folders, possible_name=folder_name
         )
-    if res_project_name != project_name:
+    if res_folder_name != folder_name:
         sly.logger.warning(
-            f"Project with name: {project_name} already exists in bucket, project has been renamed to {res_project_name}"
+            f"Folder with name: {folder_name} already exists in bucket, folder has been renamed to {res_folder_name}"
         )
-    return res_project_name
-
-
-def validate_remote_dataset_path(api: sly.Api, dataset_name: str, project_name: str = None) -> str:
-    if project_name:
-        # Export to <bucket>/<project_name>/<dataset_name>
-        remote_path = api.remote_storage.get_remote_path(
-            provider=g.PROVIDER, bucket=g.BUCKET_NAME, path_in_bucket=""
-        )
-        remote_paths = api.storage.list(
-            g.TEAM_ID, path=remote_path, recursive=False, include_files=False, include_folders=True
-        )
-        remote_folders = [item.name for item in remote_paths if item.is_dir]
-        res_project_name = project_name
-        while res_project_name in remote_folders:
-            res_project_name = sly.generate_free_name(
-                used_names=remote_folders, possible_name=project_name
-            )
-        if res_project_name != project_name:
-            sly.logger.warning(
-                f"Project folder with name: {project_name} already exists in bucket, renamed to {res_project_name}"
-            )
-        
-        # Now validate dataset folder inside project folder
-        project_remote_path = api.remote_storage.get_remote_path(
-            provider=g.PROVIDER, bucket=g.BUCKET_NAME, path_in_bucket=res_project_name
-        )
-        dataset_remote_paths = api.storage.list(
-            g.TEAM_ID, path=project_remote_path, recursive=False, include_files=False, include_folders=True
-        )
-        dataset_folders = [item.name for item in dataset_remote_paths if item.is_dir]
-        res_dataset_name = dataset_name
-        while res_dataset_name in dataset_folders:
-            res_dataset_name = sly.generate_free_name(
-                used_names=dataset_folders, possible_name=dataset_name
-            )
-        if res_dataset_name != dataset_name:
-            sly.logger.warning(
-                f"Dataset with name: {dataset_name} already exists in {res_project_name}, dataset has been renamed to {res_dataset_name}"
-            )
-        
-        return f"{res_project_name}/{res_dataset_name}"
-    else:
-        # Export to <bucket>/<dataset_name>
-        remote_path = api.remote_storage.get_remote_path(
-            provider=g.PROVIDER, bucket=g.BUCKET_NAME, path_in_bucket=""
-        )
-        remote_paths = api.storage.list(
-            g.TEAM_ID, path=remote_path, recursive=False, include_files=False, include_folders=True
-        )
-        remote_folders = [item.name for item in remote_paths if item.is_dir]
-        res_dataset_name = dataset_name
-        while res_dataset_name in remote_folders:
-            res_dataset_name = sly.generate_free_name(
-                used_names=remote_folders, possible_name=dataset_name
-            )
-        if res_dataset_name != dataset_name:
-            sly.logger.warning(
-                f"Dataset with name: {dataset_name} already exists in bucket, dataset has been renamed to {res_dataset_name}"
-            )
-        
-        return res_dataset_name
+    return res_folder_name
 
 
 def upload_volume_project_to_storage(
@@ -153,13 +92,12 @@ def convert_nrrd_to_nifti(nrrd_path: str, nifti_path: str) -> None:
     sitk.WriteImage(img, nifti_path)
 
 
-def convert_volume_project(local_project_dir: str, remote_base_path: str = None) -> str:
+def convert_volume_project(local_project_dir: str) -> str:
     """
     Convert a volume project to NIfTI format.
 
     Args:
         local_project_dir (str): Path to the local project directory.
-        remote_base_path (str): Optional remote path in bucket for checking existing files.
 
     Returns:
         str: Path to the converted project directory.
@@ -435,27 +373,19 @@ def convert_volume_project(local_project_dir: str, remote_base_path: str = None)
     return str(new_project_dir)
 
 
-def upload_color_map(local_project_dir: str, remote_dataset_name: str):
-    color_map_path = os.path.join(local_project_dir, "color_map.txt")
-    if os.path.exists(color_map_path):
-        if g.CREATE_PROJECT_FOLDER:
-            color_map_bucket_path = remote_dataset_name.rsplit("/", 1)[0] + "/color_map.txt"
-        else:
-            color_map_bucket_path = "color_map.txt"
+def upload_color_map_txt(local_project_dir: str, remote_project_path: str):
+    local_dir = os.path.dirname(local_project_dir)
+    local_color_map_path = os.path.join(local_dir, "color_map.txt")
+    local_color_map_exists = sly.fs.file_exists(local_color_map_path)
+    if not local_color_map_exists:
+        sly.logger.warning(f"color_map.txt not found in local path: {local_project_dir}")
+        return
 
-        remote_color_map_path = g.api.remote_storage.get_remote_path(
-            provider=g.PROVIDER, bucket=g.BUCKET_NAME, path_in_bucket=color_map_bucket_path
-        )
-
-        existing_files = g.api.storage.list(g.TEAM_ID, path=remote_color_map_path, recursive=False)
-        if len(existing_files) > 0:
-            sly.logger.info(
-                f"color_map.txt already exists at {remote_color_map_path}, skipping upload"
-            )
-        else:
-            g.api.remote_storage.upload_path(
-                local_path=color_map_path,
-                remote_path=remote_color_map_path,
-                team_id=g.TEAM_ID,
-            )
-            sly.logger.info(f"Uploaded color_map.txt to {remote_color_map_path}")
+    remote_dir = os.path.dirname(remote_project_path)
+    remote_color_map_path = os.path.join(remote_dir, "color_map.txt")
+    remote_color_map_exists = g.api.storage.exists(g.TEAM_ID, remote_color_map_path)
+    if not remote_color_map_exists:
+        g.api.storage.upload(g.TEAM_ID, local_color_map_path, remote_color_map_path)
+        sly.logger.info(f"Successfully uploaded color_map.txt to {remote_color_map_path}")
+    else:
+        sly.logger.info(f"color_map.txt already exists: {remote_color_map_path}")
