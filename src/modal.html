@@ -9,9 +9,16 @@
         </sly-field>
     </div>
     <div class="fflex align-start">
-        <sly-field title="Bucket name" description="Export to <bucket name>/<project name>">
-            <el-input v-model="state.bucketName"></el-input>
-        </sly-field>
+        <div v-if="context.slyDatasetId && state.format == 'nifti' && !state.createProjectfolder">
+            <sly-field title="Bucket name" description="Export to <bucket name>/<dataset name>">
+              <el-input v-model="state.bucketName"></el-input>
+          </sly-field>
+        </div>
+        <div v-else>
+            <sly-field title="Bucket name" description="Export to <bucket name>/<project name>">
+              <el-input v-model="state.bucketName"></el-input>
+          </sly-field>
+        </div>
     </div>
     <div class="fflex align-start">
         <sly-field title="Export format">
@@ -32,5 +39,11 @@
             <el-option key="semantic" label="Semantic segmentation" value="semantic"></el-option>
         </el-select>
     </sly-field>
-</div>
+    </div>
+    <div v-if="context.slyDatasetId && state.format == 'nifti'">
+        <sly-field title="Create project folder"
+            description="If enabled data will be exported to <bucket name>/<project name>/<dataset name>. Otherwise data will be exported to <bucket name>/<dataset name>">
+            <el-checkbox v-model="state.createProjectfolder">Enable</el-checkbox>
+        </sly-field>
+    </div>
 </div>

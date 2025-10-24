@@ -17,7 +17,7 @@ plane_map = {
 prefixes = [helper.PlanePrefix.AXIAL, helper.PlanePrefix.CORONAL, helper.PlanePrefix.SAGITTAL]
 
 
-def validate_remote_storage_path(api: sly.Api, project_name: str) -> str:
+def validate_remote_storage_path(api: sly.Api, folder_name: str) -> str:
     remote_path = api.remote_storage.get_remote_path(
         provider=g.PROVIDER, bucket=g.BUCKET_NAME, path_in_bucket=""
     )
@@ -25,16 +25,16 @@ def validate_remote_storage_path(api: sly.Api, project_name: str) -> str:
         g.TEAM_ID, path=remote_path, recursive=False, include_files=False, include_folders=True
     )
     remote_folders = [item.name for item in remote_paths if item.is_dir]
-    res_project_name = project_name
-    while res_project_name in remote_folders:
-        res_project_name = sly.generate_free_name(
-            used_names=remote_folders, possible_name=project_name
+    res_folder_name = folder_name
+    while res_folder_name in remote_folders:
+        res_folder_name = sly.generate_free_name(
+            used_names=remote_folders, possible_name=folder_name
         )
-    if res_project_name != project_name:
+    if res_folder_name != folder_name:
         sly.logger.warning(
-            f"Project with name: {project_name} already exists in bucket, project has been renamed to {res_project_name}"
+            f"Folder with name: {folder_name} already exists in bucket, folder has been renamed to {res_folder_name}"
         )
-    return res_project_name
+    return res_folder_name
 
 
 def upload_volume_project_to_storage(
@@ -340,8 +340,6 @@ def convert_volume_project(local_project_dir: str) -> str:
                             with open(label_path, "wb") as file:
                                 file.write(volume_bytes)
 
-
-
                 volume_affine = nib.as_closest_canonical(nib.load(res_path)).affine
 
                 if ds_structure_type == 1:
@@ -373,3 +371,21 @@ def convert_volume_project(local_project_dir: str) -> str:
         os.rename(str(new_project_dir), local_project_dir)
         return local_project_dir
     return str(new_project_dir)
+
+
+def upload_color_map_txt(local_project_dir: str, remote_project_path: str):
+    local_dir = os.path.dirname(local_project_dir)
+    local_color_map_path = os.path.join(local_dir, "color_map.txt")
+    local_color_map_exists = sly.fs.file_exists(local_color_map_path)
+    if not local_color_map_exists:
+        sly.logger.warning(f"color_map.txt not found in local path: {local_project_dir}")
+        return
+
+    remote_dir = os.path.dirname(remote_project_path)
+    remote_color_map_path = os.path.join(remote_dir, "color_map.txt")
+    remote_color_map_exists = g.api.storage.exists(g.TEAM_ID, remote_color_map_path)
+    if not remote_color_map_exists:
+        g.api.storage.upload(g.TEAM_ID, local_color_map_path, remote_color_map_path)
+        sly.logger.info(f"Successfully uploaded color_map.txt to {remote_color_map_path}")
+    else:
+        sly.logger.info(f"color_map.txt already exists: {remote_color_map_path}")
