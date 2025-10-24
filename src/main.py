@@ -13,8 +13,8 @@ if g.DATASET_ID is not None:
     datasets = [g.DATASET_ID]
     dataset_info = g.api.dataset.get_info_by_id(g.DATASET_ID)
     dataset_name = dataset_info.name
-    
-    if g.CREATE_PROJECT_FOLDER:
+
+    if g.EXPORT_FORMAT == "nifti" and g.CREATE_PROJECT_FOLDER:
         # Export to <bucket>/<project_name>/<dataset_name>
         remote_dataset_name = f.validate_remote_dataset_path(
             api=g.api, 
@@ -51,9 +51,7 @@ download_volume_project(
 if g.EXPORT_FORMAT != "sly":
     local_project_dir = f.convert_volume_project(local_project_dir, remote_base_path)
 
-# For single dataset export, upload only the dataset folder content
-if g.DATASET_ID is not None:
-    # Get the actual dataset folder path inside the project
+if g.DATASET_ID is not None and g.EXPORT_FORMAT == "nifti":
     dataset_folder = os.path.join(local_project_dir, dataset_name)
     if os.path.exists(dataset_folder):
         upload_dir = dataset_folder
@@ -72,6 +70,10 @@ progress = sly.tqdm_sly(
 res_path = g.api.storage.upload_directory(
     g.TEAM_ID, upload_dir, remote_path, progress_size_cb=progress
 )
+
+if g.DATASET_ID is not None and g.EXPORT_FORMAT == "nifti":
+    f.upload_color_map(local_project_dir, remote_dataset_name)
+
 sly.logger.info(f"Successfully uploaded to {res_path}")
 
 sly.fs.remove_dir(g.STORAGE_DIR)

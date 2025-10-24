@@ -1,34 +1,28 @@
 {
-    "name": "Export volume project to cloud storage",
-    "type": "app",
-    "version": "2.0.0",
-    "categories": [
-        "export",
-        "dicom"
-    ],
-    "description": "Export volume project to Google Cloud Storage, Amazon S3, Microsoft Azure, ...",
-    "docker_image": "supervisely/import-export:6.73.458",
-    "instance_version": "6.13.8",
-    "main_script": "src/main.py",
-    "modal_template": "src/modal.html",
-    "modal_template_state": {
-        "provider": "s3",
-        "bucketName": "",
-        "format": "sly",
-        "segmentation": "semantic",
-        "createProjectfolder": true
-    },
-    "task_location": "workspace_tasks",
-    "isolate": true,
-    "headless": true,
-    "context_menu": {
-        "target": [
-            "volumes_project",
-            "volumes_dataset"
-        ],
-        "context_root": "Download as"
-    },
-    "icon": "https://user-images.githubusercontent.com/48913536/214856602-14c5b5bd-a5f5-4adc-9d5f-c52f775dc399.png",
-    "icon_cover": true,
-    "poster": "https://user-images.githubusercontent.com/48913536/214856590-087865b1-c535-4f12-a593-06e886becdc4.png"
+  "name": "Export volume project to cloud storage",
+  "type": "app",
+  "version": "2.0.0",
+  "categories": ["export", "dicom"],
+  "description": "Export volume project to Google Cloud Storage, Amazon S3, Microsoft Azure, ...",
+  "docker_image": "supervisely/import-export:6.73.460",
+  "instance_version": "6.15.2",
+  "main_script": "src/main.py",
+  "modal_template": "src/modal.html",
+  "modal_template_state": {
+    "provider": "s3",
+    "bucketName": "",
+    "format": "sly",
+    "segmentation": "semantic",
+    "createProjectfolder": true
+  },
+  "task_location": "workspace_tasks",
+  "isolate": true,
+  "headless": true,
+  "context_menu": {
+    "target": ["volumes_project", "volumes_dataset"],
+    "context_root": "Download as"
+  },
+  "icon": "https://user-images.githubusercontent.com/48913536/214856602-14c5b5bd-a5f5-4adc-9d5f-c52f775dc399.png",
+  "icon_cover": true,
+  "poster": "https://user-images.githubusercontent.com/48913536/214856590-087865b1-c535-4f12-a593-06e886becdc4.png"
 }

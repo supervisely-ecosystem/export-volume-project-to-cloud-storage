@@ -433,3 +433,29 @@ def convert_volume_project(local_project_dir: str, remote_base_path: str = None)
         os.rename(str(new_project_dir), local_project_dir)
         return local_project_dir
     return str(new_project_dir)
+
+
+def upload_color_map(local_project_dir: str, remote_dataset_name: str):
+    color_map_path = os.path.join(local_project_dir, "color_map.txt")
+    if os.path.exists(color_map_path):
+        if g.CREATE_PROJECT_FOLDER:
+            color_map_bucket_path = remote_dataset_name.rsplit("/", 1)[0] + "/color_map.txt"
+        else:
+            color_map_bucket_path = "color_map.txt"
+
+        remote_color_map_path = g.api.remote_storage.get_remote_path(
+            provider=g.PROVIDER, bucket=g.BUCKET_NAME, path_in_bucket=color_map_bucket_path
+        )
+
+        existing_files = g.api.storage.list(g.TEAM_ID, path=remote_color_map_path, recursive=False)
+        if len(existing_files) > 0:
+            sly.logger.info(
+                f"color_map.txt already exists at {remote_color_map_path}, skipping upload"
+            )
+        else:
+            g.api.remote_storage.upload_path(
+                local_path=color_map_path,
+                remote_path=remote_color_map_path,
+                team_id=g.TEAM_ID,
+            )
+            sly.logger.info(f"Uploaded color_map.txt to {remote_color_map_path}")
